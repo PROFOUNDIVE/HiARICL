@@ -15,6 +15,7 @@ If you have any questions ❓ or are interested in collaboration 🤝, please fe
 - [Requirements](#Requirements)
 - [Usage](#Usage)
 - [Acknowledgement](#Acknowledgement)
+- [Citation](#Citation)
 
 
 ## Introduction
