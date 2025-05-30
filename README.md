@@ -8,7 +8,8 @@ HiAR-ICL
 
 This repository is the official implementation of "[Beyond Examples: High-level Automated Reasoning Paradigm in In-Context Learning via MCTS](https://arxiv.org/abs/2411.18478)".
 
-If you have any questions ❓ or are interested in collaboration 🤝, please feel free to contact me at wu-jy23@mails.tsinghua.edu.cn.
+If you have any questions ❓ or are interested in collaboration 🤝, please feel free to contact me at 
+wu-jy23@mails.tsinghua.edu.cn.
 
 ## Contents
 - [Introduction](#Introduction)
