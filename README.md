@@ -124,10 +124,10 @@ You can adjust the corresponding verification methods according to your requirem
 ## Citation
 If you find this repo useful for your research, please consider citing the paper
 ```
-@article{wu2024beyond,
-  title={Beyond examples: High-level automated reasoning paradigm in in-context learning via mcts},
-  author={Wu, Jinyang and Feng, Mingkuan and Zhang, Shuai and Che, Feihu and Wen, Zengqi and Tao, Jianhua},
-  journal={arXiv preprint arXiv:2411.18478},
+@article{wu2024pandora,
+  title={Pandora's Box or Aladdin's Lamp: A Comprehensive Analysis Revealing the Role of RAG Noise in Large Language Models},
+  author={Wu, Jinyang and Che, Feihu and Zhang, Chuyuan and Tao, Jianhua and Zhang, Shuai and Shao, Pengpeng},
+  journal={arXiv preprint arXiv:2408.13533},
   year={2024}
 }
 ```
