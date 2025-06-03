@@ -4,7 +4,7 @@ HiAR-ICL
 </h1>
 
 <p align="center">
-🤗 <a href="https://huggingface.co/papers/2411.18478" target="_blank">[Daily Paper]</a> 📃 <a href="https://arxiv.org/pdf/2411.18478" target="_blank">[Arxiv]</a> </p>
+🤗 <a href="https://huggingface.co/papers/2411.18478" target="_blank">[Daily Paper]</a> 📃 <a href="https://arxiv.org/html/2411.18478v2" target="_blank">[Arxiv]</a> </p>
 
 This repository is the official implementation of "[Beyond Examples: High-level Automated Reasoning Paradigm in In-Context Learning via MCTS](https://arxiv.org/abs/2411.18478)".
 
