@@ -108,7 +108,7 @@ The script `generate_test.sh` includes several configurable parameters:
 >  ⚠️ Make sure to adjust these parameters according to your requirements.
 
 #### *Verification*
-Identifying the most accurate reasoning trajectory among multiple candidate solutions represents a critical challenge. We investigate three verification methods: process-supervision, outcome-supervision, and self-consistency. We use process-supervision method by default.
+Identifying the most accurate reasoning trajectory among multiple candidate solutions represents a critical challenge. We investigate three verification methods: process-supervision, outcome-supervision, and self-consistency. We use process-supervision+self-consistency verification by default.
 ```bash
 CUDA_VISIBLE_DEVICES="0" python verification.py --type consistency --score_type product --k 0.95
 ```
