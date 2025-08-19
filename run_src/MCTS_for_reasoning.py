@@ -38,11 +38,12 @@ from run_src.hiaricl_utils import (
     stochastic_find_best_solution,
     filtered_output_list
 )
+from logsetting import logger
 
 
 def verbose_print(s: str, verbose: bool):
     if verbose:
-        print(s)
+        logger.debug(s)
 
 
 class Generator:
@@ -380,7 +381,7 @@ class Generator:
                     if io_output.strip() not in ost_list:
                         ost_list.append(io_output.strip())
                 else:
-                    print("No similarity\nQuestion: " + user_question + "\nAnswer: " + io_output + "\nSimilarity: " + str(similarity))            
+                    logger.info("No similarity\nQuestion: " + user_question + "\nAnswer: " + io_output + "\nSimilarity: " + str(similarity))            
 
         # TODO: new added
         if len(ost_list) == 0:
@@ -560,7 +561,7 @@ class Reasoning_MCTS_Node(MCTS_Node):
                 )
                 assert all(attr is not None for attr in [parent, ost])
         except AssertionError:
-            print(f"Instantiating node with type {node_type} failed!")
+            logger.error(f"Instantiating node with type {node_type} failed!")
             breakpoint()
             exit()
 
@@ -950,9 +951,50 @@ def search_for_answers(args, evaluator, original_js, user_question: str, questio
     global if_use_cards
     if_use_cards = args.if_use_cards
     if if_use_cards:
+        # global train_paths, train_path, pre_rephrase_output
+        # logger.debug(f"args.reason_structure: {args.reason_structure}")
+        # logger.debug(f"user_question: {user_question}")
+        # logger.debug(f"args.num_cards: {args.num_cards}")
+        # train_paths = args.reason_structure[user_question][:args.num_cards]
+        # train_paths = [list(ast.literal_eval(x)) if not isinstance(x, list) else x for x in train_paths]
         global train_paths, train_path, pre_rephrase_output
-        train_paths = args.reason_structure[user_question][:args.num_cards]
-        train_paths = [list(ast.literal_eval(x)) if not isinstance(x, list) else x for x in train_paths]
+        rs = args.reason_structure
+        DEFAULT_MATH_PATHS = [
+            ['USER_QUESTION','ONE_STEP_THOUGHT','CHAIN_OF_THOUGHT'],
+            ['USER_QUESTION','DIVIDE_AND_CONQUER','CHAIN_OF_THOUGHT'],
+            ['USER_QUESTION','DIVIDE_AND_CONQUER','DIVIDE_AND_CONQUER','ONE_STEP_THOUGHT','ONE_STEP_THOUGHT'],
+        ]
+        # 1) dict(질문별) 또는 list(전역) 모두 지원
+        if isinstance(rs, dict):
+            paths = rs.get(user_question)
+            logger.debug("`isinstance(rs, dict)` case")
+        if paths is None:
+            # 2) __default__ 키가 있으면 우선 사용
+            paths = rs.get('__default__')
+            logger.debug("`paths is None` case")
+        if not paths:
+            logger.debug("`not paths` case")
+            # 3) 전체 값을 flatten + dedupe 하여 전역 공통 카드 세트 구성
+            agg = []
+            for v in rs.values():
+                agg.extend(v)
+            normed, seen = [], set()
+            for p in agg:
+                q = list(ast.literal_eval(p)) if isinstance(p, str) else list(p)
+                t = tuple(q)
+                if t not in seen:
+                    seen.add(t)
+                    normed.append(q)
+            paths = normed or DEFAULT_MATH_PATHS
+        elif isinstance(rs, list):
+            logger.debug("`isinstance(rs,list)` case")
+            paths = rs
+        else:
+            logger.debug("else case")
+            paths = DEFAULT_MATH_PATHS
+        # 최종 슬라이싱 및 정규화(이중 정규화되어도 무해)
+        train_paths = [list(ast.literal_eval(x)) if not isinstance(x, list) else x for x in paths][:args.num_cards]
+
 
     
     model_solutions = []        # record the best solution for each simulation      
@@ -963,7 +1005,7 @@ def search_for_answers(args, evaluator, original_js, user_question: str, questio
         train_paths = [None]
     
     filter_k = 3
-    print(f"len(train_paths): {len(train_paths)}")
+    logger.info(f"len(train_paths): {len(train_paths)}")
     for j, train_path in enumerate(train_paths):
         print(j, "\t", train_path)
         
@@ -1082,8 +1124,8 @@ def search_for_answers(args, evaluator, original_js, user_question: str, questio
     except:
         print(1)
 
-    print(f"len(model_solutions): {len(model_solutions)}")
-    print(f"len(model_all_solutions): {sum([len(x) for x in model_all_solutions])}")
+    logger.info(f"len(model_solutions): {len(model_solutions)}")
+    logger.info(f"len(model_all_solutions): {sum([len(x) for x in model_all_solutions])}")
 
 
     # import pdb
@@ -1100,13 +1142,13 @@ def search_for_answers(args, evaluator, original_js, user_question: str, questio
             model_all_answers = [evaluator.extract_answer_from_model_completion(a) for a in model_all_solution]
             
             # total_correct_con
-            print(f"=================================\nRollout {rollout_id}: {model_path}\n")
+            logger.info(f"=================================\nRollout {rollout_id}: {model_path}\n")
 
             correct = evaluator.check_answers_equiv(model_answer, gt_answer)
             correct_limit = any([evaluator.check_answers_equiv(a, gt_answer) for a in model_all_answers])
             most_common_answer = Counter(model_all_answers).most_common(1)[0][0]
             correct_con = evaluator.check_answers_equiv(most_common_answer, gt_answer)
-            print(f"model_answer: {model_answer}\ngt_answer: {gt_answer}\ncorrect: {correct}")
+            logger.info(f"model_answer: {model_answer}\ngt_answer: {gt_answer}\ncorrect: {correct}")
             
             random_answer = random.choice(model_all_answers)
             correct_random = evaluator.check_answers_equiv(random_answer, gt_answer)

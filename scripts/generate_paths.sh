@@ -1,23 +1,30 @@
 #!/bin/bash
 
 # Configuration parameters
-GPU_ID=3
+GPU_ID=0
 PORT=2427
-MODEL_NAME="meta-llama/Meta-Llama-3-8B-Instruct"
+MODEL_NAME="/home/hyunwoo/llms/Meta-Llama-3-8B-Instruct/"
 MAX_WAIT=500   # Maximum wait time in seconds
 SLEEP_INTERVAL=20  # Interval between checks in seconds
 LOG_FILE="vllm_server.log"
 
+: <<'END'
 # Start the vLLM server
 echo "Starting vLLM server on GPU $GPU_ID with port $PORT..."
-CUDA_VISIBLE_DEVICES=$GPU_ID nohup python -m vllm.entrypoints.openai.api_server \
+# CUDA_VISIBLE_DEVICES=$GPU_ID nohup python -m vllm.entrypoints.openai.api_server \
+CUDA_VISIBLE_DEVICES=$GPU_ID python -m vllm.entrypoints.openai.api_server \
     --model $MODEL_NAME \
+	--served-model-name llama3-8b-instruct \
     --max_model_len 5000 \
     --tensor_parallel_size 1 \
     --dtype bfloat16 \
     --max-num-seqs 512 \
     --gpu_memory_utilization 0.7 \
     --port $PORT > $LOG_FILE 2>&1 &
+
+export OPENAI_BASE_URL="http://127.0.0.1:${PORT}/v1"
+export OPENAI_API_BASE="$OPENAI_BASE_URL"   # 일부 코드의 옛 변수명 호환
+export OPENAI_API_KEY="sk-local-dummy"
 
 # Wait for the vLLM server to be ready
 echo "Waiting for vLLM server to be ready on port $PORT..."
@@ -34,6 +41,7 @@ while ! nc -z localhost $PORT; do
 done
 
 echo "✅ vLLM server is up after ${elapsed}s."
+END
 
 # Set GPU environment variable
 export CUDA_VISIBLE_DEVICES=$GPU_ID
@@ -44,9 +52,11 @@ python run_src/generate.py \
     --dataset_name MATH \
     --if_use_cards False \
     --test_json_filename train_all \
-    --model_ckpt $MODEL_NAME \
+    --model_ckpt llama3-8b-instruct \
     --num_rollouts 8 \
     --api gpt3.5-turbo
+
+# 결과는 run_outputs/DATASET_NAME/$model_ckpt로 저장됨.
 
 echo "✅ Generate execution completed."
 

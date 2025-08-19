@@ -232,8 +232,8 @@ class AnswerExtraction:
                 acc_num[subject.lower()] += 1
             elif "GPQA" in self.dataset_name:
                 item = id_map[i]
-                subject = item["subdomain"]
-                acc_num[subject.lower()] += 1
+                # subject = item["subdomain"]
+                # acc_num[subject.lower()] += 1
             
             if self.type == "consistency":
                 most_common_answer = Counter(model_answers).most_common(1)[0][0]
@@ -521,13 +521,13 @@ class AnswerExtraction:
 if __name__ == "__main__":
     # os.environ["CUDA_VISIBLE_DEVICES"] = "1"
 
-    root_dir = f"Your directory path containing reasoning path for test questions"
-    file_dir = os.path.join("./run_outputs", root_dir, "05-15_00-00")
+    root_dir = f"GPQA/llama3-8b-instruct/test_|_rolls_8_|_reuse_train_True_|_reuse_rolls_1_|_condition_|_reuse_paths_5_|_sa_True_|_ost_True_select_True_n_3_|_cot_True_|_dc_True_|_srr_True"
+    file_dir = os.path.join("./run_outputs", root_dir, "08-18_18-32")
 
     parser = argparse.ArgumentParser(description="verification")
     parser.add_argument('--type', type=str, default="llama3.1-8b-prm-mistral-data", choices=["consistency", "llama3.1-8b-orm-mistral-data", "llama3.1-8b-prm-mistral-data", "math-shepherd-mistral-7b-prm"], help="verification type")
     parser.add_argument('--score_type', type=str, default="product", choices=["product", "min", "average", "max"], help="prm solution score type")
-    parser.add_argument('--k', type=int, default=0.95, help='balance factor')
+    parser.add_argument('--k', type=float, default=0.95, help='balance factor')
     args = parser.parse_args()
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")

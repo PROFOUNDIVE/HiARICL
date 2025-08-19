@@ -17,7 +17,9 @@ def load_vLLM_model(model_ckpt, seed, tensor_parallel_size=1, half_precision=Fal
         tensor_parallel_size=1,
         dtype=torch.bfloat16,
         gpu_memory_utilization=0.8,
-        max_model_len=2048,
+        # gpu_memory_utilization=0.4,
+        # max_model_len=2048,
+        max_model_len=4096
     )
 
     return tokenizer, llm

@@ -1,13 +1,14 @@
 #!/bin/bash
 
 # Configuration parameters
-GPU_ID=3
+GPU_ID=0
 PORT=2427
-MODEL_NAME="meta-llama/Llama-3.1-8B-Instruct"
+MODEL_NAME="/home/hyunwoo/llms/Meta-Llama-3-8B-Instruct/"
 MAX_WAIT=500   # Maximum wait time in seconds
 SLEEP_INTERVAL=20  # Interval between checks in seconds
 LOG_FILE="vllm_server.log"
 
+: <<'END'
 # Start the vLLM server
 echo "Starting vLLM server on GPU $GPU_ID with port $PORT..."
 CUDA_VISIBLE_DEVICES=$GPU_ID nohup python -m vllm.entrypoints.openai.api_server \
@@ -34,6 +35,7 @@ while ! nc -z localhost $PORT; do
 done
 
 echo "✅ vLLM server is up after ${elapsed}s."
+END
 
 # Set GPU environment variable
 export CUDA_VISIBLE_DEVICES=$GPU_ID
@@ -41,17 +43,17 @@ export CUDA_VISIBLE_DEVICES=$GPU_ID
 # Run the generate script
 echo "Starting generate.py with model $MODEL_NAME..."
 python run_src/generate.py \
-    --dataset_name MATH \
+    --dataset_name GPQA \
     --if_use_cards True \
     --test_json_filename test_all \
-    --model_ckpt $MODEL_NAME \
+    --model_ckpt llama3-8b-instruct \
     --attribute_type condition \
     --api gpt3.5-turbo
 
 echo "✅ Generate execution completed."
 
 # Kill the vLLM server after completion
-echo "Shutting down vLLM server..."
-kill $(pgrep -f "vllm.entrypoints.openai.api_server")
-echo "✅ vLLM server stopped."
-echo "✅ Script execution completed."
+# echo "Shutting down vLLM server..."
+# kill $(pgrep -f "vllm.entrypoints.openai.api_server")
+# echo "✅ vLLM server stopped."
+# echo "✅ Script execution completed."

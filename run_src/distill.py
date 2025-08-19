@@ -73,6 +73,10 @@ class PathExtractor:
                 index = f"00{i}"
             elif i < 1000:
                 index = f"0{i}"
+            
+            # train_all에서 100개만 path를 만들어서 임시로 break해줌
+            if i==100:
+                break
             answer_file = os.path.join(self.file_dir, f"answer_sheets/Question {index} - Answer.json")
             solution_file = os.path.join(self.file_dir, f"answer_sheets/Question {index} - Final Solutions.json")
             
@@ -462,13 +466,15 @@ if __name__ == "__main__":
     fix_seeds(args.seed)
     
     # os.environ["CUDA_VISIBLE_DEVICES"] = "0"
-    args.model_ckpt = "meta-llama/Meta-Llama-3-8B-Instruct"
+    # args.model_ckpt = "meta-llama/Meta-Llama-3-8B-Instruct"
+    args.model_ckpt = "/home/hyunwoo/llms/Meta-Llama-3-8B-Instruct/"
+    args.api = "vllm"
     k = 0.95                         # ratio of path to score
     attribute_type = "condition"    # 'condition', 'subquestion', 'confidence', 'semantic'      
     structure_dir = "structure"
 
-    root_dir = f"Your directory path containing MCTS-generated solutions for the seed dataset"
-    file_dir = os.path.join("./run_outputs", root_dir, "05-15_00-00")
+    root_dir = f"MATH/llama3-8b-instruct/train_|_rolls_8_|_reuse_train_False_|_sa_True_|_ost_True_select_True_n_3_|_cot_True_|_dc_True_|_srr_True_|_all-mpnet-base-v2"
+    file_dir = os.path.join("./run_outputs", root_dir, "08-14_17-57")
 
     dataset_name = root_dir.split("/")[0].strip("")
     model_name = root_dir.split("/")[1].split("/")[0].strip()

@@ -4,6 +4,7 @@ import sys
 import time
 import os, json, time
 from tqdm import tqdm
+from logsetting import logger
 
 sys.path.append(".")
 os.environ["VLLM_WORKER_MULTIPROC_METHOD"] = "spawn"
@@ -15,18 +16,21 @@ from eval_src.Evaluator import *
 from collections import Counter
 import concurrent.futures
 import multiprocessing
+import traceback
 
 
 def main(args):
     # import pdb
     # pdb.set_trace()
-    max_threads = 32
+    # max_threads = 32
+    max_threads = 1
     multiprocessing.set_start_method('spawn', force=True)
     fix_seeds(args.seed)
     args.local_rank, args.world_size = 0, 8
     args.tensor_parallel_size = 8
 
     test_file = os.path.join(args.data_root, args.dataset_name, args.test_json_filename + ".json")
+    logger.debug(f"test_file: {test_file}")
     assert os.path.exists(test_file), f"Test file {test_file} does not exist."
     data_item_list = read_json(test_file)
     
@@ -98,7 +102,11 @@ def main(args):
     
     # import pdb
     # pdb.set_trace()
-    with concurrent.futures.ProcessPoolExecutor(max_workers=max_threads) as executor:
+    # with concurrent.futures.ProcessPoolExecutor(max_workers=max_threads) as executor:
+    # OpenAI/vLLM 서버(HTTP) 경로는 I/O 바운드이므로 프로세스 풀 대신 스레드 풀 사용
+    _openai_aliases = {"gpt3.5-turbo", "gpt-4o"}
+    Executor = concurrent.futures.ThreadPoolExecutor if args.api in _openai_aliases else concurrent.futures.ProcessPoolExecutor
+    with Executor(max_workers=max_threads) as executor:
         futures = []
         for i, data_item in enumerate(
             (pbar := tqdm(data_item_list, disable=args.local_rank > 0 or args.verbose, position=1)) 
@@ -136,9 +144,9 @@ def main(args):
                 subject = data_item["extra_info"]["subject"]
                 js["level"] = level
                 js["subject"] = subject
-            elif "GPQA" in dataset_name:
-                subject = data_item["subdomain"]
-                js["subject"] = subject
+            # elif "GPQA" in dataset_name:
+                # subject = data_item["subdomain"]
+                # js["subject"] = subject
             
             
             model_solutions, stopping_id, model_all_solutions = [], -1, []
@@ -149,9 +157,11 @@ def main(args):
         for i, future in enumerate(concurrent.futures.as_completed(futures)):
             try:
                 js, model_solutions, model_all_solutions, model_best_path, correct, correct_limit, correct_con, correct_random = future.result()
-            except:
+            except Exception as e:
+                logger.error(f"{repr(e)}")
+                traceback.print_exc()
                 continue
-            print("get result!")
+            logger.info("get result!")
             with open(os.path.join(args.answer_sheets_dir, f"Question {i:04d} - Answer.json"), "w") as f:
                 json.dump(js, f)
             num_tested += 1
@@ -182,13 +192,13 @@ def main(args):
                         print(f"{key}: {js['subacc'][str(key)]:.4f}")
                 
             
-            print(f"accuracy: {total_correct/(num_tested):.4f}")
-            print(f"consistency: {total_correct_con/(num_tested):.4f} | random: {total_correct_random/(num_tested):.4f}")
-            print(f"limit accuracy: {total_correct_limit/(num_tested):.4f}")            
+            logger.info(f"accuracy: {total_correct/(num_tested):.4f}")
+            logger.info(f"consistency: {total_correct_con/(num_tested):.4f} | random: {total_correct_random/(num_tested):.4f}")
+            logger.info(f"limit accuracy: {total_correct_limit/(num_tested):.4f}")            
             if args.if_use_cards:
-                print(f"model: {model_name} | dataset: {args.dataset_name} | file: {args.file} | difficulty: {args.attribute_type}\n")
+                logger.info(f"model: {model_name} | dataset: {args.dataset_name} | file: {args.file} | difficulty: {args.attribute_type}\n")
             else:
-                print(f"model: {model_name} | dataset: {args.dataset_name} | file: {args.file}\n")
+                logger.info(f"model: {model_name} | dataset: {args.dataset_name} | file: {args.file}\n")
 
             with open(os.path.join(args.run_outputs_dir, "intermediate_result.txt"), "w") as f:
                 if not args.disable_answer_selection:
@@ -196,11 +206,13 @@ def main(args):
                     f.write(f"Num correct: {total_correct}\n")
                     f.write(f"Acc: {total_correct/(num_tested)}\n")
             
-
+    if num_tested == 0:
+        raise Exception("[ERROR] No items were processed successfully; check worker errors above.")
+    
     end_time = time.time()
 
     total_seconds = end_time - start_time
-    avg_seconds = (end_time - start_time) / num_tested
+    avg_seconds = total_seconds / num_tested
 
     total_hours = int(total_seconds // 3600)
     total_minutes = int((total_seconds % 3600) // 60)
@@ -238,7 +250,7 @@ if __name__ == "__main__":
     #! ----------------------------------------------------------------------------
     if "GSM" in args.dataset_name and "HARD" not in args.dataset_name:
         prompts_dir = os.path.join(args.prompts_root, "GSM8K")
-    elif "MATH" in args.dataset_name:
+    elif "MATH" in args.dataset_name or "GPQA" in args.dataset_name:
         prompts_dir = os.path.join(args.prompts_root, "MATH")
     else:
         prompts_dir = os.path.join(args.prompts_root, args.dataset_name)
